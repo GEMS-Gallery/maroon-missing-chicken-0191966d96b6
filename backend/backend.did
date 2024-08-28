@@ -1,0 +1,17 @@
+type Result = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type Address = 
+ record {
+   createdAt: nat;
+   publicKey: text;
+ };
+service : {
+  generateAddress: () -> (Result);
+  getAddresses: () -> (vec record {
+                             text;
+                             Address;
+                           }) query;
+}
