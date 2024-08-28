@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { backend } from 'declarations/backend';
-import { Container, Typography, Button, Box, Card, CardContent, List, ListItem, ListItemText, CircularProgress, TextField, Grid } from '@mui/material';
+import { Container, Typography, Button, Box, Card, CardContent, List, ListItem, ListItemText, CircularProgress, TextField, Grid, Link } from '@mui/material';
 import { styled } from '@mui/system';
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -18,11 +18,13 @@ type Address = {
 };
 
 type Transaction = {
+  id: string;
   from: string;
   to: string;
   amount: number;
   fee: number;
   status: string;
+  timestamp: bigint;
 };
 
 const App: React.FC = () => {
@@ -33,6 +35,7 @@ const App: React.FC = () => {
   const [sendFrom, setSendFrom] = useState('');
   const [sendTo, setSendTo] = useState('');
   const [sendAmount, setSendAmount] = useState('');
+  const [lastTxId, setLastTxId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAddresses();
@@ -70,7 +73,8 @@ const App: React.FC = () => {
     try {
       const result = await backend.sendBitcoin(sendFrom, sendTo, parseFloat(sendAmount));
       if ('ok' in result) {
-        alert(result.ok);
+        setLastTxId(result.ok);
+        alert('Transaction submitted successfully!');
         await fetchAddresses();
         await fetchTransactions();
       } else {
@@ -143,6 +147,14 @@ const App: React.FC = () => {
         >
           Send Bitcoin
         </Button>
+        {lastTxId && (
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            Transaction submitted. View on mempool.space:{' '}
+            <Link href={`https://mempool.space/tx/${lastTxId}`} target="_blank" rel="noopener noreferrer">
+              {lastTxId}
+            </Link>
+          </Typography>
+        )}
         <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
           Your Addresses
         </Typography>
@@ -163,7 +175,15 @@ const App: React.FC = () => {
           {transactions.map((tx, index) => (
             <ListItem key={index}>
               <ListItemText
-                primary={`From: ${tx.from} To: ${tx.to}`}
+                primary={
+                  <>
+                    From: {tx.from} To: {tx.to}
+                    {' '}
+                    <Link href={`https://mempool.space/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
+                      View on mempool.space
+                    </Link>
+                  </>
+                }
                 secondary={`Amount: ${tx.amount} BTC | Fee: ${tx.fee} BTC | Status: ${tx.status}`}
               />
             </ListItem>

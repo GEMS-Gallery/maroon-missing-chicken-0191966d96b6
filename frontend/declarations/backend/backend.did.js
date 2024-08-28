@@ -6,10 +6,12 @@ export const idlFactory = ({ IDL }) => {
     'createdAt' : IDL.Nat,
   });
   const Transaction = IDL.Record({
+    'id' : IDL.Text,
     'to' : IDL.Text,
     'fee' : IDL.Float64,
     'status' : IDL.Text,
     'from' : IDL.Text,
+    'timestamp' : IDL.Int,
     'amount' : IDL.Float64,
   });
   return IDL.Service({

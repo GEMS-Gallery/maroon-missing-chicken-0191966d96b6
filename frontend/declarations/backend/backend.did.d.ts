@@ -10,10 +10,12 @@ export interface Address {
 export type Result = { 'ok' : string } |
   { 'err' : string };
 export interface Transaction {
+  'id' : string,
   'to' : string,
   'fee' : number,
   'status' : string,
   'from' : string,
+  'timestamp' : bigint,
   'amount' : number,
 }
 export interface _SERVICE {

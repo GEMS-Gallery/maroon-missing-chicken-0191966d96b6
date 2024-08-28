@@ -1,3 +1,4 @@
+import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 
 import Array "mo:base/Array";
@@ -8,6 +9,7 @@ import HashMap "mo:base/HashMap";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
 import Float "mo:base/Float";
+import Time "mo:base/Time";
 
 actor {
   // Types
@@ -18,11 +20,13 @@ actor {
   };
 
   type Transaction = {
+    id: Text;
     from: Text;
     to: Text;
     amount: Float;
     fee: Float;
     status: Text;
+    timestamp: Int;
   };
 
   // Stable variables
@@ -31,6 +35,7 @@ actor {
 
   // Mutable state
   var addressCounter : Nat = 0;
+  var transactionCounter : Nat = 0;
   var addresses : HashMap.HashMap<Text, Address> = HashMap.fromIter(addressEntries.vals(), 0, Text.equal, Text.hash);
   var transactions : [Transaction] = [];
 
@@ -69,14 +74,18 @@ actor {
           #err("Insufficient balance")
         } else {
           let fee = 0.0001; // Low fee for simulation
+          let txId = "tx" # Nat.toText(transactionCounter);
           let newTransaction : Transaction = {
+            id = txId;
             from = from;
             to = to;
             amount = amount;
             fee = fee;
             status = "Pending";
+            timestamp = Time.now();
           };
           transactions := Array.append(transactions, [newTransaction]);
+          transactionCounter += 1;
           
           // Update sender's balance
           let updatedSenderAddress : Address = {
@@ -86,7 +95,7 @@ actor {
           };
           addresses.put(from, updatedSenderAddress);
           
-          #ok("Transaction submitted to mempool")
+          #ok(txId)
         }
       };
     }

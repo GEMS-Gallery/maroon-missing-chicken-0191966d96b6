@@ -3,7 +3,9 @@ type Transaction =
    amount: float64;
    fee: float64;
    from: text;
+   id: text;
    status: text;
+   timestamp: int;
    to: text;
  };
 type Result = 
