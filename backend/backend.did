@@ -1,3 +1,11 @@
+type Transaction = 
+ record {
+   amount: float64;
+   fee: float64;
+   from: text;
+   status: text;
+   to: text;
+ };
 type Result = 
  variant {
    err: text;
@@ -5,6 +13,7 @@ type Result =
  };
 type Address = 
  record {
+   balance: float64;
    createdAt: nat;
    publicKey: text;
  };
@@ -14,4 +23,6 @@ service : {
                              text;
                              Address;
                            }) query;
+  getTransactions: () -> (vec Transaction) query;
+  sendBitcoin: (text, text, float64) -> (Result);
 }

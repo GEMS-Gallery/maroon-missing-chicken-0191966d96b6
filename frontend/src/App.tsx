@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { backend } from 'declarations/backend';
-import { Container, Typography, Button, Box, Card, CardContent, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
+import { Container, Typography, Button, Box, Card, CardContent, List, ListItem, ListItemText, CircularProgress, TextField, Grid } from '@mui/material';
 import { styled } from '@mui/system';
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -11,18 +11,42 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+type Address = {
+  publicKey: string;
+  createdAt: bigint;
+  balance: number;
+};
+
+type Transaction = {
+  from: string;
+  to: string;
+  amount: number;
+  fee: number;
+  status: string;
+};
+
 const App: React.FC = () => {
   const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<[string, { publicKey: string; createdAt: bigint }][]>([]);
+  const [addresses, setAddresses] = useState<[string, Address][]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendFrom, setSendFrom] = useState('');
+  const [sendTo, setSendTo] = useState('');
+  const [sendAmount, setSendAmount] = useState('');
 
   useEffect(() => {
     fetchAddresses();
+    fetchTransactions();
   }, []);
 
   const fetchAddresses = async () => {
     const result = await backend.getAddresses();
     setAddresses(result);
+  };
+
+  const fetchTransactions = async () => {
+    const result = await backend.getTransactions();
+    setTransactions(result);
   };
 
   const handleGenerateAddress = async () => {
@@ -41,11 +65,29 @@ const App: React.FC = () => {
     setLoading(false);
   };
 
+  const handleSendBitcoin = async () => {
+    setLoading(true);
+    try {
+      const result = await backend.sendBitcoin(sendFrom, sendTo, parseFloat(sendAmount));
+      if ('ok' in result) {
+        alert(result.ok);
+        await fetchAddresses();
+        await fetchTransactions();
+      } else {
+        alert('Error sending Bitcoin: ' + result.err);
+      }
+    } catch (error) {
+      console.error('Error sending Bitcoin:', error);
+      alert('Error sending Bitcoin. Please try again.');
+    }
+    setLoading(false);
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Bitcoin Address Generator
+          Bitcoin Address Generator and Sender
         </Typography>
         <StyledButton
           variant="contained"
@@ -63,14 +105,66 @@ const App: React.FC = () => {
           </Card>
         )}
         <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
-          Previously Generated Addresses
+          Send Bitcoin
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="From Address"
+              value={sendFrom}
+              onChange={(e) => setSendFrom(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="To Address"
+              value={sendTo}
+              onChange={(e) => setSendTo(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Amount"
+              type="number"
+              value={sendAmount}
+              onChange={(e) => setSendAmount(e.target.value)}
+            />
+          </Grid>
+        </Grid>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSendBitcoin}
+          disabled={loading}
+          sx={{ mt: 2 }}
+        >
+          Send Bitcoin
+        </Button>
+        <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
+          Your Addresses
         </Typography>
         <List>
           {addresses.map(([address, data], index) => (
             <ListItem key={index}>
               <ListItemText
                 primary={`Address: ${address}`}
-                secondary={`Public Key: ${data.publicKey}`}
+                secondary={`Public Key: ${data.publicKey} | Balance: ${data.balance} BTC`}
+              />
+            </ListItem>
+          ))}
+        </List>
+        <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
+          Transactions
+        </Typography>
+        <List>
+          {transactions.map((tx, index) => (
+            <ListItem key={index}>
+              <ListItemText
+                primary={`From: ${tx.from} To: ${tx.to}`}
+                secondary={`Amount: ${tx.amount} BTC | Fee: ${tx.fee} BTC | Status: ${tx.status}`}
               />
             </ListItem>
           ))}

@@ -7,20 +7,32 @@ import Result "mo:base/Result";
 import HashMap "mo:base/HashMap";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
+import Float "mo:base/Float";
 
 actor {
   // Types
   type Address = {
     publicKey: Text;
     createdAt: Nat;
+    balance: Float;
+  };
+
+  type Transaction = {
+    from: Text;
+    to: Text;
+    amount: Float;
+    fee: Float;
+    status: Text;
   };
 
   // Stable variables
   stable var addressEntries : [(Text, Address)] = [];
+  stable var transactionEntries : [Transaction] = [];
 
   // Mutable state
   var addressCounter : Nat = 0;
   var addresses : HashMap.HashMap<Text, Address> = HashMap.fromIter(addressEntries.vals(), 0, Text.equal, Text.hash);
+  var transactions : [Transaction] = [];
 
   // Helper function to generate a simulated Bitcoin address and public key
   func generateSimulatedAddress() : (Text, Text) {
@@ -36,6 +48,7 @@ actor {
     let newAddress : Address = {
       publicKey = publicKey;
       createdAt = addressCounter;
+      balance = 1.0; // Start with 1 BTC for simulation
     };
     addresses.put(address, newAddress);
     addressCounter += 1;
@@ -47,13 +60,53 @@ actor {
     Iter.toArray(addresses.entries())
   };
 
+  // Send Bitcoin
+  public func sendBitcoin(from: Text, to: Text, amount: Float) : async Result.Result<Text, Text> {
+    switch (addresses.get(from)) {
+      case (null) { #err("Sender address not found") };
+      case (?senderAddress) {
+        if (senderAddress.balance < amount) {
+          #err("Insufficient balance")
+        } else {
+          let fee = 0.0001; // Low fee for simulation
+          let newTransaction : Transaction = {
+            from = from;
+            to = to;
+            amount = amount;
+            fee = fee;
+            status = "Pending";
+          };
+          transactions := Array.append(transactions, [newTransaction]);
+          
+          // Update sender's balance
+          let updatedSenderAddress : Address = {
+            publicKey = senderAddress.publicKey;
+            createdAt = senderAddress.createdAt;
+            balance = senderAddress.balance - amount - fee;
+          };
+          addresses.put(from, updatedSenderAddress);
+          
+          #ok("Transaction submitted to mempool")
+        }
+      };
+    }
+  };
+
+  // Get all transactions
+  public query func getTransactions() : async [Transaction] {
+    transactions
+  };
+
   // System functions for upgrades
   system func preupgrade() {
     addressEntries := Iter.toArray(addresses.entries());
+    transactionEntries := transactions;
   };
 
   system func postupgrade() {
     addresses := HashMap.fromIter(addressEntries.vals(), 0, Text.equal, Text.hash);
+    transactions := transactionEntries;
     addressEntries := [];
+    transactionEntries := [];
   };
 }
